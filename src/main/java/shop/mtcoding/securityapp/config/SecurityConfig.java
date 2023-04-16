@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.SecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -16,7 +15,6 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import shop.mtcoding.securityapp.core.jwt.JwtAuthorizationFilter;
-import shop.mtcoding.securityapp.dto.ResponseDTO;
 
 @Slf4j
 @Configuration
@@ -38,7 +36,7 @@ public class SecurityConfig {
         @Override
         public void configure(HttpSecurity builder) throws Exception {
             AuthenticationManager authenticationManager = builder.getSharedObject(AuthenticationManager.class);
-            builder.addFilterAt(new JwtAuthorizationFilter(authenticationManager), BasicAuthenticationFilter.class);
+            builder.addFilter(new JwtAuthorizationFilter(authenticationManager));
             super.configure(builder);
         }
     }
@@ -57,10 +55,11 @@ public class SecurityConfig {
         // 4. jSessionId 사용 거부
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 
-        // 5. form 로긴 해제
+        // 5. form 로긴 해제 (UsernamePasswordAuthenticationFilter 비활성화)
         http.formLogin().disable();
 
-        // 6. XSS (lucy 필터)
+        // 6. 로그인 인증창이 뜨지 않게 비활성화
+        http.httpBasic().disable();
 
         // 7. 커스텀 필터 적용 (시큐리티 필터 교환)
         http.apply(new CustomSecurityFilterManager());
@@ -73,7 +72,7 @@ public class SecurityConfig {
             log.warn("워닝 : 인증 실패 : "+authException.getMessage());
             log.error("에러 : 인증 실패 : "+authException.getMessage());
 
-            response.setContentType("text/plain; chatset=utf-8");
+            response.setContentType("text/plain; charset=utf-8");
             response.setStatus(401);
             response.getWriter().println("인증 실패");
         });
@@ -86,7 +85,7 @@ public class SecurityConfig {
             log.warn("워닝 : 권한 실패 : "+accessDeniedException.getMessage());
             log.error("에러 : 권한 실패 : "+accessDeniedException.getMessage());
 
-            response.setContentType("text/plain; chatset=utf-8");
+            response.setContentType("text/plain; charset=utf-8");
             response.setStatus(403);
             response.getWriter().println("권한 실패");
         });
